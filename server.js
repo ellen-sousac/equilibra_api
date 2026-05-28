@@ -42,6 +42,6 @@ app.get('/status', async (req, res) => {
 
 const porta = process.env.PORT || 3000;
 
-app.listen(porta, () => {
-  console.log(`API Equilibra rodando em http://localhost:${porta}`);
+app.listen(porta, '0.0.0.0', () => {
+  console.log(`API Equilibra rodando na porta ${porta}`);
 });
