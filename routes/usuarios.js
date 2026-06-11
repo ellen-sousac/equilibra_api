@@ -158,10 +158,20 @@ router.post('/login', async (req, res) => {
 
 router.post('/recuperar-pin', async (req, res) => {
   try {
-    const { cpf, emailRecuperacao, novoPin } = req.body;
-    const cpfLimpo = limparCpf(cpf);
+    const {
+      nomeUsuario,
+      emailRecuperacao,
+      novoPin,
+    } = req.body;
 
-    if (cpfLimpo.length !== 11 || !emailRecuperacao || String(novoPin).length !== 6) {
+    const nomeUsuarioLimpo =
+      String(nomeUsuario || '').trim().toLowerCase();
+
+    if (
+      !nomeUsuarioLimpo ||
+      !emailRecuperacao ||
+      String(novoPin).length !== 6
+    ) {
       return res.status(400).json({
         ok: false,
         mensagem: 'Dados inválidos para recuperação.',
@@ -169,20 +179,20 @@ router.post('/recuperar-pin', async (req, res) => {
     }
 
     const [usuarios] = await pool.query(
-      'SELECT id FROM usuarios WHERE cpf = ? AND email_recuperacao = ?',
-      [cpfLimpo, emailRecuperacao]
+      'SELECT id FROM usuarios WHERE nome_usuario = ? AND email_recuperacao = ?',
+      [nomeUsuarioLimpo, emailRecuperacao]
     );
 
     if (usuarios.length === 0) {
       return res.status(404).json({
         ok: false,
-        mensagem: 'CPF ou e-mail de recuperação não encontrado.',
+        mensagem: 'Usuário ou e-mail de recuperação não encontrado.',
       });
     }
 
     await pool.query(
-      'UPDATE usuarios SET pin = ? WHERE cpf = ?',
-      [novoPin, cpfLimpo]
+      'UPDATE usuarios SET pin = ? WHERE nome_usuario = ?',
+      [novoPin, nomeUsuarioLimpo]
     );
 
     return res.json({
@@ -197,6 +207,7 @@ router.post('/recuperar-pin', async (req, res) => {
     });
   }
 });
+
 router.put('/perfil/:cpf', async (req, res) => {
   try {
     const cpfLimpo = limparCpf(req.params.cpf);
