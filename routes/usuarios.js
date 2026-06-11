@@ -113,21 +113,21 @@ router.post('/cadastro', async (req, res) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { cpf, pin } = req.body;
-    const cpfLimpo = limparCpf(cpf);
+    const { nomeUsuario, pin } = req.body;
+    const nomeUsuarioLimpo = String(nomeUsuario || '').trim().toLowerCase();
 
     const [usuarios] = await pool.query(
-      `SELECT id, nome, cpf, email_recuperacao, data_nascimento,
-              tipo_diabetes, usa_insulina, data_criacao
+      `SELECT id, nome, nome_usuario, cpf, email_recuperacao, data_nascimento,
+              tipo_diabetes, data_criacao
        FROM usuarios
-       WHERE cpf = ? AND pin = ?`,
-      [cpfLimpo, pin]
+       WHERE nome_usuario = ? AND pin = ?`,
+      [nomeUsuarioLimpo, pin]
     );
 
     if (usuarios.length === 0) {
       return res.status(401).json({
         ok: false,
-        mensagem: 'CPF ou PIN inválido.',
+        mensagem: 'Usuário ou PIN inválido.',
       });
     }
 
@@ -139,11 +139,11 @@ router.post('/login', async (req, res) => {
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
+        nomeUsuario: usuario.nome_usuario,
         cpf: usuario.cpf,
         emailRecuperacao: usuario.email_recuperacao,
         dataNascimento: usuario.data_nascimento,
         tipoDiabetes: usuario.tipo_diabetes,
-        usaInsulina: !!usuario.usa_insulina,
         dataCriacao: usuario.data_criacao,
       },
     });
