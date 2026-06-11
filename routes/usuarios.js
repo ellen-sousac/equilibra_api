@@ -10,17 +10,25 @@ router.post('/cadastro', async (req, res) => {
   try {
     const {
       nome,
+      nomeUsuario,
       cpf,
       emailRecuperacao,
       pin,
       dataNascimento,
       tipoDiabetes,
-      usaInsulina,
     } = req.body;
 
     const cpfLimpo = limparCpf(cpf);
+    const nomeUsuarioLimpo = String(nomeUsuario || '').trim().toLowerCase();
 
-    if (!nome || cpfLimpo.length !== 11 || !emailRecuperacao || !pin) {
+    if (
+      !nome ||
+      !nomeUsuarioLimpo ||
+      cpfLimpo.length !== 11 ||
+      !emailRecuperacao ||
+      !pin ||
+      !dataNascimento
+    ) {
       return res.status(400).json({
         ok: false,
         mensagem: 'Dados obrigatórios não informados.',
@@ -34,30 +42,43 @@ router.post('/cadastro', async (req, res) => {
       });
     }
 
-    const [existente] = await pool.query(
+    const [existenteCpf] = await pool.query(
       'SELECT id FROM usuarios WHERE cpf = ?',
       [cpfLimpo]
     );
 
-    if (existente.length > 0) {
+    if (existenteCpf.length > 0) {
       return res.status(409).json({
         ok: false,
         mensagem: 'CPF já cadastrado.',
       });
     }
 
+    const [existenteUsuario] = await pool.query(
+      'SELECT id FROM usuarios WHERE nome_usuario = ?',
+      [nomeUsuarioLimpo]
+    );
+
+    if (existenteUsuario.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        mensagem: 'Nome de usuário já utilizado.',
+      });
+    }
+
     const [resultado] = await pool.query(
       `INSERT INTO usuarios
-      (nome, cpf, email_recuperacao, pin, data_nascimento, tipo_diabetes, usa_insulina)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (nome, nome_usuario, cpf, email_recuperacao, pin, data_nascimento, tipo_diabetes, usa_insulina)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         nome,
+        nomeUsuarioLimpo,
         cpfLimpo,
         emailRecuperacao,
         pin,
         dataNascimento,
         tipoDiabetes || 'Não informado',
-        usaInsulina ? 1 : 0,
+        0,
       ]
     );
 
@@ -74,11 +95,11 @@ router.post('/cadastro', async (req, res) => {
       usuario: {
         id: resultado.insertId,
         nome,
+        nomeUsuario: nomeUsuarioLimpo,
         cpf: cpfLimpo,
         emailRecuperacao,
         dataNascimento,
         tipoDiabetes: tipoDiabetes || 'Não informado',
-        usaInsulina: !!usaInsulina,
       },
     });
   } catch (erro) {
