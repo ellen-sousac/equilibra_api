@@ -184,9 +184,15 @@ router.put('/perfil/:cpf', async (req, res) => {
       nome,
       emailRecuperacao,
       tipoDiabetes,
+      dataNascimento,
     } = req.body;
 
-    if (!nome || !emailRecuperacao || !tipoDiabetes) {
+    if (
+      !nome ||
+      !emailRecuperacao ||
+      !tipoDiabetes ||
+      !dataNascimento
+    ) {
       return res.status(400).json({
         ok: false,
         mensagem: 'Dados obrigatórios não informados.',
@@ -207,9 +213,18 @@ router.put('/perfil/:cpf', async (req, res) => {
 
     await pool.query(
       `UPDATE usuarios
-       SET nome = ?, email_recuperacao = ?, tipo_diabetes = ?
+       SET nome = ?,
+           email_recuperacao = ?,
+           tipo_diabetes = ?,
+           data_nascimento = ?
        WHERE cpf = ?`,
-      [nome, emailRecuperacao, tipoDiabetes, cpfLimpo]
+      [
+        nome,
+        emailRecuperacao,
+        tipoDiabetes,
+        dataNascimento,
+        cpfLimpo,
+      ]
     );
 
     return res.json({
