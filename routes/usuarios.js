@@ -176,5 +176,52 @@ router.post('/recuperar-pin', async (req, res) => {
     });
   }
 });
+router.put('/perfil/:cpf', async (req, res) => {
+  try {
+    const cpfLimpo = limparCpf(req.params.cpf);
 
+    const {
+      nome,
+      emailRecuperacao,
+      tipoDiabetes,
+    } = req.body;
+
+    if (!nome || !emailRecuperacao || !tipoDiabetes) {
+      return res.status(400).json({
+        ok: false,
+        mensagem: 'Dados obrigatórios não informados.',
+      });
+    }
+
+    const [usuarios] = await pool.query(
+      'SELECT id FROM usuarios WHERE cpf = ?',
+      [cpfLimpo]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensagem: 'Usuário não encontrado.',
+      });
+    }
+
+    await pool.query(
+      `UPDATE usuarios
+       SET nome = ?, email_recuperacao = ?, tipo_diabetes = ?
+       WHERE cpf = ?`,
+      [nome, emailRecuperacao, tipoDiabetes, cpfLimpo]
+    );
+
+    return res.json({
+      ok: true,
+      mensagem: 'Perfil atualizado com sucesso.',
+    });
+  } catch (erro) {
+    return res.status(500).json({
+      ok: false,
+      mensagem: 'Erro ao atualizar perfil.',
+      erro: erro.message,
+    });
+  }
+});
 module.exports = router;
