@@ -271,4 +271,55 @@ router.put('/perfil/:cpf', async (req, res) => {
     });
   }
 });
+
+router.put('/alterar-pin/:cpf', async (req, res) => {
+  try {
+    const cpfLimpo = limparCpf(req.params.cpf);
+
+    const {
+      pinAtual,
+      novoPin,
+    } = req.body;
+
+    if (
+      !pinAtual ||
+      !novoPin ||
+      String(pinAtual).length !== 6 ||
+      String(novoPin).length !== 6
+    ) {
+      return res.status(400).json({
+        ok: false,
+        mensagem: 'Informe o PIN atual e o novo PIN com 6 dígitos.',
+      });
+    }
+
+    const [usuarios] = await pool.query(
+      'SELECT id FROM usuarios WHERE cpf = ? AND pin = ?',
+      [cpfLimpo, pinAtual]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(401).json({
+        ok: false,
+        mensagem: 'PIN atual incorreto.',
+      });
+    }
+
+    await pool.query(
+      'UPDATE usuarios SET pin = ? WHERE cpf = ?',
+      [novoPin, cpfLimpo]
+    );
+
+    return res.json({
+      ok: true,
+      mensagem: 'PIN alterado com sucesso.',
+    });
+  } catch (erro) {
+    return res.status(500).json({
+      ok: false,
+      mensagem: 'Erro ao alterar PIN.',
+      erro: erro.message,
+    });
+  }
+});
 module.exports = router;
