@@ -322,4 +322,65 @@ router.put('/alterar-pin/:cpf', async (req, res) => {
     });
   }
 });
+
+router.put('/alterar-usuario/:cpf', async (req, res) => {
+  try {
+    const cpfLimpo = limparCpf(req.params.cpf);
+
+    const {
+      novoNomeUsuario,
+    } = req.body;
+
+    const nomeUsuarioLimpo =
+      String(novoNomeUsuario || '').trim().toLowerCase();
+
+    if (!nomeUsuarioLimpo) {
+      return res.status(400).json({
+        ok: false,
+        mensagem: 'Informe um nome de usuário válido.',
+      });
+    }
+
+    const [usuarioAtual] = await pool.query(
+      'SELECT id FROM usuarios WHERE cpf = ?',
+      [cpfLimpo]
+    );
+
+    if (usuarioAtual.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensagem: 'Usuário não encontrado.',
+      });
+    }
+
+    const [existente] = await pool.query(
+      'SELECT id FROM usuarios WHERE nome_usuario = ? AND cpf <> ?',
+      [nomeUsuarioLimpo, cpfLimpo]
+    );
+
+    if (existente.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        mensagem: 'Nome de usuário já utilizado.',
+      });
+    }
+
+    await pool.query(
+      'UPDATE usuarios SET nome_usuario = ? WHERE cpf = ?',
+      [nomeUsuarioLimpo, cpfLimpo]
+    );
+
+    return res.json({
+      ok: true,
+      mensagem: 'Nome de usuário alterado com sucesso.',
+      nomeUsuario: nomeUsuarioLimpo,
+    });
+  } catch (erro) {
+    return res.status(500).json({
+      ok: false,
+      mensagem: 'Erro ao alterar nome de usuário.',
+      erro: erro.message,
+    });
+  }
+});
 module.exports = router;
