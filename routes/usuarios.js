@@ -383,4 +383,49 @@ router.put('/alterar-usuario/:cpf', async (req, res) => {
     });
   }
 });
+
+router.delete('/excluir-conta/:cpf', async (req, res) => {
+  try {
+    const cpfLimpo = limparCpf(req.params.cpf);
+
+    const {
+      pin,
+    } = req.body;
+
+    if (!pin || String(pin).length !== 6) {
+      return res.status(400).json({
+        ok: false,
+        mensagem: 'Informe o PIN com 6 dígitos para excluir a conta.',
+      });
+    }
+
+    const [usuarios] = await pool.query(
+      'SELECT id FROM usuarios WHERE cpf = ? AND pin = ?',
+      [cpfLimpo, pin]
+    );
+
+    if (usuarios.length === 0) {
+      return res.status(401).json({
+        ok: false,
+        mensagem: 'PIN incorreto.',
+      });
+    }
+
+    await pool.query(
+      'DELETE FROM usuarios WHERE cpf = ?',
+      [cpfLimpo]
+    );
+
+    return res.json({
+      ok: true,
+      mensagem: 'Conta excluída com sucesso.',
+    });
+  } catch (erro) {
+    return res.status(500).json({
+      ok: false,
+      mensagem: 'Erro ao excluir conta.',
+      erro: erro.message,
+    });
+  }
+});
 module.exports = router;
